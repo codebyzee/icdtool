@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICD-10 Query Tool</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin-top: 50px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+    .autocomplete-results {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: white;
+      position: absolute;
+      width: 100%;
+      z-index: 1000;
+    }
+    .autocomplete-item {
+      padding: 10px;
+      cursor: pointer;
+    }
+    .autocomplete-item:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2 class="text-center mb-4">ICD-10 Query Tool</h2>
+    
+    <input type="text" id="searchInput" class="form-control" placeholder="Enter Code or Condition" onkeyup="searchCodes()">
+    <div id="autocompleteResults" class="autocomplete-results"></div>
+    
+    <div id="results" class="mt-4"></div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    function searchCodes() {
+      const query = document.getElementById("searchInput").value.trim();
+      const resultsDiv = document.getElementById("autocompleteResults");
+
+      // Hide autocomplete if query is too short
+      if (query.length < 2) {
+        resultsDiv.innerHTML = "";
+        resultsDiv.style.display = "none";
+        return;
+      }
+
+      fetch(`/search?query=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          resultsDiv.innerHTML = "";
+          resultsDiv.style.display = data.length > 0 ? "block" : "none";
+
+          data.forEach(item => {
+            const entry = document.createElement("div");
+            entry.className = "autocomplete-item";
+            entry.innerHTML = `<b>${item.ICD10_Code}</b>: ${item.Condition}`;
+            entry.onclick = () => displayDetails(item);
+            resultsDiv.appendChild(entry);
+          });
+        });
+    }
+
+    function displayDetails(item) {
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = `
+        <div class="card">
+          <div class="card-header">
+            <h5>${item.ICD10_Code}</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text"><strong>Condition:</strong> ${item.Condition}</p>
+            <p class="card-text"><strong>Chronic:</strong> ${item.Chronic}</p>
+            ${item.Medicaid_Guideline_Summary 
+              ? `<p class="card-text"><strong>Medicaid Guideline Summary:</strong> ${item.Medicaid_Guideline_Summary}</p>` 
+              : ''}
+          </div>
+        </div>
+      `;
+      // Hide autocomplete results after selection
+      document.getElementById("autocompleteResults").style.display = "none";
+    }
+  </script>
+
+</body>
+</html>
